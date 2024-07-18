@@ -8,7 +8,7 @@ export const space = sqliteTable('space', {
     metaDatabaseId: text('metaDatabaseId').$default(() => "Empty"),
     postDatabaseId: text('postDatabaseId').$default(() => "Empty"),
     title: text('title').notNull(),
-    state: text('state', { enum: ['NONE', 'ACTIVATED', 'ARCHIVED', 'DELETED'] }).$default(() => "NONE")
+    state: text('state', { enum: ['NONE', 'ACTIVATED', 'ARCHIVED', 'DELETED'] }).$default(() => "ARCHIVED")
 });
 
 export type Space = typeof space.$inferSelect;

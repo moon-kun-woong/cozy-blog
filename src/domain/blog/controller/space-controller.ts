@@ -22,9 +22,8 @@ export default function (app: App): any {
             const contextBody = body;
             const { uid, state, title }: any = contextBody;
             const result = await db.insert(space).values([{ uid, slug, state, title }]);
-            const resultJson = JSON.stringify(result)
 
-            return JSON.parse(resultJson);
+            return result;
         })
 
         .put("/:slug", async ({ db, params: { slug }, body }) => {
@@ -32,7 +31,7 @@ export default function (app: App): any {
             const { uid, metaDatabaseId, postDatabaseId, title, state }: any = contextBody;
             const result = await db.update(space).set({ uid, metaDatabaseId, postDatabaseId, title, state }).where(sql`slug=${slug}`);
 
-            return JSON.stringify(result);
+            return result;
         })
 
         .delete("/:slug", async ({ db, params: { slug } }) => {

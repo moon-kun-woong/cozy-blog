@@ -1,4 +1,4 @@
-import space from './spaceController'
+import space from './space-controller'
 
 const contorllers = [
   { prefix: 'space', register: space }

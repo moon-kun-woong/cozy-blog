@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { setup } from "./setup";
 import { type Controller, type AnyElysia } from "./types"
 
-export function appStart({ env, controllers }: { env: Env, controllers: Controller[] }): AnyElysia {
+export function generateApp({ env, controllers }: { env: Env, controllers: Controller[] }): AnyElysia {
 	let app = new Elysia({ aot: false })
 		.use(setup(env))
 		.onError(errorHandler)
@@ -14,8 +14,8 @@ export function appStart({ env, controllers }: { env: Env, controllers: Controll
 
 const errorHandler = ({ code, error }: { code: string, error: Error }): Response => {
 	if (code === 'NOT_FOUND') {
-		return new Response(`${code}, ${error}`)
+		return Response.json({error})
 	}
 	console.error(code, error)
-	return new Response(`${code} , ${error.message}`)
+	return Response.json({code, error})
 }
