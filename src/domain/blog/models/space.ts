@@ -1,4 +1,5 @@
 import Elysia, { t } from "elysia";
+import { isNotEmpty } from "elysia/handler";
 
 export enum SpaceState {
     NONE = 0,
@@ -7,72 +8,68 @@ export enum SpaceState {
     DELETED = 3
 }
 
-function defaultUuid(): string {
-    return '00000000-0000-0000-0000-000000000000';
-}
-
-export function spaceStateToId(state: SpaceState): number {
-    return state;
-}
-
 export const querySchema = t.Object({
-    id: t.Array(t.String({ default: defaultUuid })), // type : UUID 로 바꿔야하는데 모르겠음.
-    uid: t.Array(t.String({ default: "test_space" })),
-    slug: t.Array(t.String({ default: "default" })),
-    title: t.Array(t.String({ default: "test_title" })),
-    state: t.Array(t.Enum(SpaceState, { default: SpaceState.ACTIVATED })),
+    id: t.Array(t.Number({ default: null })),
+    uid: t.Array(t.String({ default: null })),
+    title: t.Array(t.String({ default: null })),
+    state: t.Array(t.Enum(SpaceState, { default: null })),
+    slug: t.Array(t.String({ default: null })),
 })
 
 export const simpleSchema = t.Object({
-    id: t.Number({ default: 0 }),
-    slug: t.String({ default: "default" }),
-    title: t.String({ default: "test_title" }),
-    state: t.Enum(SpaceState, { default: SpaceState.ACTIVATED }),
-    uid: t.String({ default: "test_space" })
+    id: t.Number(),
+    slug: t.String(),
+    title: t.String(),
+    state: t.Enum(SpaceState),
+    uid: t.String()
 })
 
-export const detailSchema = t.Composite([
-    simpleSchema,
-    t.Object({
-        metaDatabaseId: t.String({ default: defaultUuid }),
-        postDatabaseId: t.String({ default: defaultUuid }),
-        lastRefreshedAt: t.Date(new Date),
-        createdAt: t.Date(new Date),
-        updatedAt: t.Date(new Date)
-    })
-])
+export const detailSchema = t.Object({
+    id: t.Number(),
+    slug: t.String(),
+    metaDatabaseId: t.String(),
+    postDatabaseId: t.String(),
+    title: t.String(),
+    state: t.Enum(SpaceState),
+    lastRefreshedAt: t.Date(),
+    createdAt: t.Date(),
+    updatedAt: t.Date(),
+    uid: t.String(),
+})
 
 export const createSchema = t.Object({
     slug: t.String(),
-    metaDatabaseId: t.String({ default: defaultUuid }),
-    postDatabaseId: t.String({ default: defaultUuid }),
+
+    metaDatabaseId: t.String(),
+    postDatabaseId: t.String(),
+
     title: t.String(),
     uid: t.String()
 })
 
 export const updateSchema = t.Object({
-    title: t.String(),
-    state: t.Enum(SpaceState, { default: SpaceState.ACTIVATED }),
-    metaDatabaseId: t.String({ default: defaultUuid }),
-    postDatabaseId: t.String({ default: defaultUuid })
+    title: t.String({default: null}),
+    state: t.Enum(SpaceState, {default: null}),
+    metaDatabaseId: t.String({default: null}),
+    postDatabaseId: t.String({default: null})
 })
 
 export const refreshActionSchema = t.Object({
-
+    type: t.String().use(isNotEmpty)
 })
 
 export const availabilityQuerySchema = t.Object({
-    title: t.String(),
-    slug: t.String()
+    title: t.String({default: null}),
+    slug: t.String({default: null})
 })
 
 export const spaceModel = new Elysia()
     .model({
-        querySchema,
-        simpleSchema,
-        detailSchema,
-        createSchema,
-        updateSchema,
-        refreshActionSchema,
-        availabilityQuerySchema
+        query: querySchema,
+        simple: simpleSchema,
+        detail: detailSchema,
+        create: createSchema,
+        update: updateSchema,
+        refresh: refreshActionSchema,
+        availabilityQuery: availabilityQuerySchema
     })

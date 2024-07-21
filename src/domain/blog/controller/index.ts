@@ -1,7 +1,7 @@
-import space from './space-controller'
+import spaceRegister from './space-controller'
 
 const contorllers = [
-  { prefix: 'space', register: space }
+  { prefix: 'space', register: spaceRegister }
 ]
 
 export default contorllers

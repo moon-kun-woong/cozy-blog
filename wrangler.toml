@@ -10,3 +10,6 @@ account_id = "a0f0622b36d5e55324b4a3ee91ab6708"
 binding = "DB"
 database_name = "cozy-blog"
 database_id = "4a9b81b1-12da-4e9b-96fb-760d567595db"
+
+[dev]
+port = 8787
