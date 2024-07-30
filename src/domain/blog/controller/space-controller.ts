@@ -1,26 +1,33 @@
 import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
+import { toPageable } from "../../page";
 
 export default function (app: App): any {
     return app
         .use(spaceModel)
-        .get("/", async ({ db }) => {
+        .get("/", async ({ db, query: { page, size } }) => {
+
+            const offset = page * size;
+            const pageable = toPageable()
 
             const result = await db
                 .select()
                 .from(space)
+                .where()
+                .limit(size)
+                .offset(offset)
                 .all();
 
             return result;
-        })
+        }, { response: "simple", query: "pageQuery" })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
                 .select()
                 .from(space)
-                .where(sql`slug=${slug}`);
+                .where(eq(space.slug, slug));
 
             return result;
         }, { response: "detail" })
@@ -38,7 +45,7 @@ export default function (app: App): any {
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     lastRefreshedAt: new Date(),
-                    state:SpaceState.ACTIVATED
+                    state: SpaceState.ACTIVATED
                 }).returning();
 
             return result;
@@ -54,10 +61,10 @@ export default function (app: App): any {
                     title,
                     state
                 })
-                .where(sql`slug=${slug}`).returning();
+                .where(eq(space.slug, slug)).returning();
 
             return result;
-        }, { body: "update" , response:"detail"})
+        }, { body: "update", response: "detail" })
 
         .delete("/:slug", async ({ db, params: { slug } }) => {
             const result = await db
@@ -67,7 +74,52 @@ export default function (app: App): any {
             return result;
         })
 
-        .post("/:slug/refresh_action",async ({params: { slug }, query}) => {
+        .post("/:slug/refresh_action", async ({ db, params: { slug }, body }) => {
 
-        }, {query:"refresh"})
+            const pageId = 6
+
+
+
+        }, { body: "refresh" })
+
+        .get("/availability", async ({ query: { slug, title } }) => {
+
+            function checkSlug(slug: any): Boolean {
+                let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
+                if (regex?.find(slug) == null) return false
+                return true
+            }
+
+            function checkName(title: String): Boolean {
+                if (title == null) {
+                    return false
+                }
+                return true
+            }
+
+            (slug: any, title: any) => {
+                if (slug != null && !checkSlug(slug)) {
+                    return false
+                }
+                if (title != null && !checkName(title)) {
+                    return false
+                }
+                return true
+            }
+        }, { query: "availabilityQuery" })
+
+        .patch("/:id", async ({ db, params: { id }, body }) => {
+            const { metaDatabaseId, postDatabaseId, title, state } = body;
+            const [result] = await db
+                .update(space)
+                .set({
+                    metaDatabaseId,
+                    postDatabaseId,
+                    title,
+                    state
+                })
+                .where(sql`id=${id}`).returning();
+
+            return result;
+        }, { response: "detail", body: "update" })
 }

@@ -1,5 +1,6 @@
+import { isNotNull } from "drizzle-orm";
 import Elysia, { t } from "elysia";
-import { isNotEmpty } from "elysia/handler";
+import { pageQuery, page, toPageable } from "../../page";
 
 export enum SpaceState {
     NONE = 0,
@@ -55,7 +56,7 @@ export const updateSchema = t.Object({
 })
 
 export const refreshActionSchema = t.Object({
-    type: t.String().use(isNotEmpty)
+    type: t.String(isNotNull)
 })
 
 export const availabilityQuerySchema = t.Object({
@@ -71,5 +72,7 @@ export const spaceModel = new Elysia()
         create: createSchema,
         update: updateSchema,
         refresh: refreshActionSchema,
-        availabilityQuery: availabilityQuerySchema
+        availabilityQuery: availabilityQuerySchema,
+        pageQuery: pageQuery,
+        page: page
     })
