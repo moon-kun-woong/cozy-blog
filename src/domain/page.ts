@@ -19,19 +19,21 @@ export const page = t.Object({
     totalCount: t.Number(),
 })
 
-export function toPageable() {
+export function toPageable(schema: any) {
+    const { page, size } = schema
     if (pageQuery.sort = []) {
-        return {
-            page: page,
-            size: pageQuery.size
-        }
+        return t.Composite([
+            page,
+            t.Object({
+                page,
+                size
+            })
+        ])
     } else {
-        return {
-            page: page,
-            size: pageQuery.size,
-            direction: pageQuery.direction,
-            sort: pageQuery.sort
-        }
+        return t.Composite([
+            page,
+            t.Object({ content: schema })
+        ])
     }
 }
 

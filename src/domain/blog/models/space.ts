@@ -67,7 +67,7 @@ export const availabilityQuerySchema = t.Object({
 export const spaceModel = new Elysia()
     .model({
         query: querySchema,
-        simple: simpleSchema,
+        simples: toPageable(simpleSchema),
         detail: detailSchema,
         create: createSchema,
         update: updateSchema,

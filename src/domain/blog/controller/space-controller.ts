@@ -1,8 +1,7 @@
 import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
-import { eq, sql } from 'drizzle-orm'
+import { count, eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
-import { toPageable } from "../../page";
 
 export default function (app: App): any {
     return app
@@ -10,18 +9,21 @@ export default function (app: App): any {
         .get("/", async ({ db, query: { page, size } }) => {
 
             const offset = page * size;
-            const pageable = toPageable()
 
-            const result = await db
-                .select()
-                .from(space)
-                .where()
-                .limit(size)
-                .offset(offset)
-                .all();
+            const [content, [{ count: totalCount }]] = await Promise.all([
+                db.select()
+                    .from(space)
+                    .limit(size)
+                    .offset(offset)
+                    .all(),
+                db.select({ count: count() })
+                    .from(space)])
 
-            return result;
-        }, { response: "simple", query: "pageQuery" })
+            return {
+                totalPage: Math.ceil(totalCount / size),
+                content
+            }
+        }, { response: "simples", query: "pageQuery" })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -69,14 +71,19 @@ export default function (app: App): any {
         .delete("/:slug", async ({ db, params: { slug } }) => {
             const result = await db
                 .delete(space)
-                .where(sql`slug=${slug}`);
+                .where(eq(space.slug, slug));
 
             return result;
         })
 
         .post("/:slug/refresh_action", async ({ db, params: { slug }, body }) => {
 
-            const pageId = 6
+            function createRefreshRequest(body: any) {
+                
+                function checkNewOrUpdated(){
+
+                }
+            }
 
 
 
