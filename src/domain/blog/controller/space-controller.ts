@@ -1,6 +1,6 @@
 import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
-import { count, eq, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
 
 export default function (app: App): any {
@@ -10,19 +10,14 @@ export default function (app: App): any {
 
             const offset = page * size;
 
-            const [content, [{ count: totalCount }]] = await Promise.all([
+            const content = await Promise.all([
                 db.select()
                     .from(space)
                     .limit(size)
                     .offset(offset)
-                    .all(),
-                db.select({ count: count() })
-                    .from(space)])
-
-            return {
-                totalPage: Math.ceil(totalCount / size),
-                content
-            }
+                    .all()
+            ])
+            return { content }
         }, { response: "simples", query: "pageQuery" })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
@@ -75,19 +70,6 @@ export default function (app: App): any {
 
             return result;
         })
-
-        .post("/:slug/refresh_action", async ({ db, params: { slug }, body }) => {
-
-            function createRefreshRequest(body: any) {
-                
-                function checkNewOrUpdated(){
-
-                }
-            }
-
-
-
-        }, { body: "refresh" })
 
         .get("/availability", async ({ query: { slug, title } }) => {
 

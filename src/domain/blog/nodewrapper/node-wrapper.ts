@@ -1,11 +1,9 @@
-import { t } from "elysia"
-
 export class NodeWrapper {
+    origin: Record<string, any>;
+    id: string;
 
-    function nodeWrapper(target : JSON) {
-        const {origin, id}
-        
-        return target
+    constructor(target: Record<string, any>) {
+        this.origin = target;
+        this.id = target.id;
     }
-    
 }
