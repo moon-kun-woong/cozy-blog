@@ -2,23 +2,41 @@ import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
 import { eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
+import { pageQuery } from "../../page";
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function (app: App): any {
     return app
         .use(spaceModel)
-        .get("/", async ({ db, query: { page, size } }) => {
+        .get("/", async ({ db }) => {
 
-            const offset = page * size;
 
-            const content = await Promise.all([
-                db.select()
-                    .from(space)
-                    .limit(size)
-                    .offset(offset)
-                    .all()
-            ])
-            return { content }
-        }, { response: "simples", query: "pageQuery" })
+            const currnetPage = pageQuery.page ?? 0
+            const sizeNumber = pageQuery.size ?? 20
+
+            const offset = currnetPage * sizeNumber;
+
+            const content = await db
+                .select({
+                    id: space.id,
+                    uid: space.uid,
+                    title: space.title,
+                    state: space.state,
+                    slug: space.slug
+                })
+                .from(space)
+                .limit(sizeNumber)
+                .offset(offset)
+                .all()
+
+            return {
+                content: content,
+                currentPage: currnetPage,
+                totalPage: Math.ceil(currnetPage / sizeNumber),
+                totalCount: currnetPage
+            }
+        }, { response: "pages" })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -31,18 +49,21 @@ export default function (app: App): any {
 
         .post("/:slug", async ({ db, params: { slug }, body }) => {
             const { uid, title, metaDatabaseId, postDatabaseId } = body;
+            const createdId = uuidv4();
+
             const [result] = await db
                 .insert(space)
                 .values({
+                    id: createdId,
                     uid,
                     slug,
-                    title,
                     metaDatabaseId,
                     postDatabaseId,
+                    title,
+                    state: SpaceState.ACTIVATED,
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     lastRefreshedAt: new Date(),
-                    state: SpaceState.ACTIVATED
                 }).returning();
 
             return result;
@@ -53,10 +74,10 @@ export default function (app: App): any {
             const [result] = await db
                 .update(space)
                 .set({
+                    title,
+                    state,
                     metaDatabaseId,
                     postDatabaseId,
-                    title,
-                    state
                 })
                 .where(eq(space.slug, slug)).returning();
 
@@ -73,6 +94,9 @@ export default function (app: App): any {
 
         .get("/availability", async ({ query: { slug, title } }) => {
 
+            slug = slug;
+            title = title;
+
             function checkSlug(slug: any): Boolean {
                 let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
                 if (regex?.find(slug) == null) return false
@@ -86,7 +110,7 @@ export default function (app: App): any {
                 return true
             }
 
-            (slug: any, title: any) => {
+            (slug: String, title: String) => {
                 if (slug != null && !checkSlug(slug)) {
                     return false
                 }
@@ -102,10 +126,10 @@ export default function (app: App): any {
             const [result] = await db
                 .update(space)
                 .set({
+                    title,
+                    state,
                     metaDatabaseId,
                     postDatabaseId,
-                    title,
-                    state
                 })
                 .where(sql`id=${id}`).returning();
 

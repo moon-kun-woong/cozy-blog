@@ -1,6 +1,6 @@
-import { isNotNull } from "drizzle-orm";
+import { isNotNull, isNull } from "drizzle-orm";
 import Elysia, { t } from "elysia";
-import { pageQuery, page, toPageable } from "../../page";
+import { pageQuery, pages, toPageable } from "../../page";
 
 export enum SpaceState {
     NONE = 0,
@@ -10,7 +10,7 @@ export enum SpaceState {
 }
 
 export const querySchema = t.Object({
-    id: t.Array(t.Number({ default: null })),
+    id: t.Array(t.String({ default: null })),
     uid: t.Array(t.String({ default: null })),
     title: t.Array(t.String({ default: null })),
     state: t.Array(t.Enum(SpaceState, { default: null })),
@@ -18,7 +18,7 @@ export const querySchema = t.Object({
 })
 
 export const simpleSchema = t.Object({
-    id: t.Number(),
+    id: t.String(),
     slug: t.String(),
     title: t.String(),
     state: t.Enum(SpaceState),
@@ -26,7 +26,8 @@ export const simpleSchema = t.Object({
 })
 
 export const detailSchema = t.Object({
-    id: t.Number(),
+    id: t.String(),
+    uid: t.String(),
     slug: t.String(),
     metaDatabaseId: t.String(),
     postDatabaseId: t.String(),
@@ -35,12 +36,9 @@ export const detailSchema = t.Object({
     lastRefreshedAt: t.Date(),
     createdAt: t.Date(),
     updatedAt: t.Date(),
-    uid: t.String(),
 })
 
 export const createSchema = t.Object({
-    slug: t.String(),
-
     metaDatabaseId: t.String(),
     postDatabaseId: t.String(),
 
@@ -60,8 +58,8 @@ export const refreshActionSchema = t.Object({
 })
 
 export const availabilityQuerySchema = t.Object({
-    title: t.String({default: null}),
-    slug: t.String({default: null})
+    title: t.String(isNull),
+    slug: t.String(isNull)
 })
 
 export const spaceModel = new Elysia()
@@ -74,5 +72,5 @@ export const spaceModel = new Elysia()
         refresh: refreshActionSchema,
         availabilityQuery: availabilityQuerySchema,
         pageQuery: pageQuery,
-        page: page
+        pages: pages
     })

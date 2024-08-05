@@ -9,4 +9,5 @@ export function setup(env: Env) {
   return new Elysia(config)
     .decorate('db', drizzle(env.DB))
     .use(cors())
+    
 }
