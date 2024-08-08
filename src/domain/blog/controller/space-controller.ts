@@ -1,132 +1,62 @@
 import { App } from "../../../types";
-import { space } from '../../../domain/blog/entity/index'
-import { eq, sql } from 'drizzle-orm'
-import { spaceModel, SpaceState } from "../models/space";
-import { v4 as uuidv4 } from 'uuid';
+import { spaceModel } from "../models/space";
+import { SpaceService } from "../service/space-service";
 
 
 export default function (app: App): any {
     return app
         .use(spaceModel)
-        .get("/", async ({ db, query }) => {    
-            const currnetPage = parseInt(query.page ?? '0');
-            const sizeNumber = parseInt(query.size ?? '20');
+        .decorate({spaceService : new SpaceService()})
+        .get("/", async ({ db, query: {page, size}, spaceService }) => {
 
-            const offset = currnetPage * sizeNumber;
+            const allSpace = await spaceService.findAllSpace(db, page, size)
 
-            const content = await db
-                .select({
-                    id: space.id,
-                    uid: space.uid,
-                    title: space.title,
-                    state: space.state,
-                    slug: space.slug
-                })
-                .from(space)
-                .limit(sizeNumber)
-                .offset(offset)
-                .all()
+            return allSpace
 
-            console.log(query);
+        }, { response: "pages", query: "pageQuery" })
 
-            return {
-                content: content,
-                currentPage: currnetPage,
-                totalPage: Math.ceil(currnetPage / sizeNumber),
-                totalCount: currnetPage
-            }
-        }, { response: "pages", query: "pageQuery"})
+        .get("/:slug", async ({ db, params: { slug }, spaceService }) => {
 
-        .get("/:slug", async ({ db, params: { slug } }) => {
-            const [result] = await db
-                .select()
-                .from(space)
-                .where(eq(space.slug, slug));
+            const oneSpaceBySlug = await spaceService.findOneSpaceBySlug(db, slug)
 
-            return result;
+            return oneSpaceBySlug
+
         }, { response: "detail" })
 
-        .post("/:slug", async ({ db, params: { slug }, body }) => {
-            const { uid, title, metaDatabaseId, postDatabaseId } = body;
-            const createdId = uuidv4();
+        .post("/:slug", async ({ db, params: { slug }, body, spaceService }) => {
 
-            const [result] = await db
-                .insert(space)
-                .values({
-                    id: createdId,
-                    uid,
-                    slug,
-                    metaDatabaseId,
-                    postDatabaseId,
-                    title,
-                    state: SpaceState.ACTIVATED,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    lastRefreshedAt: new Date(),
-                }).returning();
+            const createSpace = await spaceService.createSpace(db, slug, body)
 
-            return result;
+            return createSpace
+
         }, { body: 'create', response: "detail" })
 
-        .put("/:slug", async ({ db, params: { slug }, body }) => {
-            const { metaDatabaseId, postDatabaseId, title, state } = body;
-            const [result] = await db
-                .update(space)
-                .set({
-                    title,
-                    state,
-                    metaDatabaseId,
-                    postDatabaseId,
-                })
-                .where(eq(space.slug, slug)).returning();
+        .put("/:slug", async ({ db, params: { slug }, body, spaceService }) => {
 
-            return result;
+            const updateBySlug = await spaceService.updateSpaceBySlug(db, slug, body)
+
+            return updateBySlug
+
         }, { body: "update", response: "detail" })
 
-        .delete("/:slug", async ({ db, params: { slug } }) => {
-            const result = await db
-                .delete(space)
-                .where(eq(space.slug, slug));
+        .delete("/:slug", async ({ db, params: { slug }, spaceService }) => {
 
-            return result;
+            const deleteSpace = await spaceService.deleteSpace(db, slug)
+
+            return deleteSpace
         })
 
-        .get("/availability", async ({ query: { slug, title } }) => {
+        .get("/availability", async ({ query: { slug, title }, spaceService }) => {
 
-            slug = slug;
-            title = title;
+            const checkAvailability = await spaceService.checkAvailability(slug, title)
 
-            function checkSlug(slug: any): Boolean {
-                let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
-                if (regex?.find(slug) == null) return false
-                else return true
-            }
-
-            function checkName(title: String): Boolean {
-                if (title == null) return false
-                else return true
-            }
-
-            if(slug != null && !checkSlug(slug)) return false
-            if(title != null && !checkName(title)) return false
-            
-            return true
-
-            
+            return checkAvailability
         }, { query: "availabilityQuery" })
 
-        .patch("/:id", async ({ db, params: { id }, body }) => {
-            const { metaDatabaseId, postDatabaseId, title, state } = body;
-            const [result] = await db
-                .update(space)
-                .set({
-                    title,
-                    state,
-                    metaDatabaseId,
-                    postDatabaseId,
-                })
-                .where(sql`id=${id}`).returning();
+        .patch("/:id", async ({ db, params: { id }, body, spaceService }) => {
 
-            return result;
+            const updateById = await spaceService.updateSpaceById(db, id, body)
+
+            return updateById
         }, { response: "detail", body: "update" })
 }
