@@ -19,6 +19,7 @@
     "wrangler": "^3.65.0"
   },
   "dependencies": {
+    "@bogeychan/elysia-logger": "^0.1.1",
     "@elysiajs/cors": "^1.0.5",
     "@elysiajs/swagger": "^1.1.0",
     "@types/uuid": "^10.0.0",
