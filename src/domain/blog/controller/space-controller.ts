@@ -2,18 +2,15 @@ import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
 import { eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
-import { pageQuery } from "../../page";
 import { v4 as uuidv4 } from 'uuid';
 
 
 export default function (app: App): any {
     return app
         .use(spaceModel)
-        .get("/", async ({ db }) => {
-
-
-            const currnetPage = pageQuery.page ?? 0
-            const sizeNumber = pageQuery.size ?? 20
+        .get("/", async ({ db, query }) => {    
+            const currnetPage = parseInt(query.page ?? '0');
+            const sizeNumber = parseInt(query.size ?? '20');
 
             const offset = currnetPage * sizeNumber;
 
@@ -30,13 +27,15 @@ export default function (app: App): any {
                 .offset(offset)
                 .all()
 
+            console.log(query);
+
             return {
                 content: content,
                 currentPage: currnetPage,
                 totalPage: Math.ceil(currnetPage / sizeNumber),
                 totalCount: currnetPage
             }
-        }, { response: "pages" })
+        }, { response: "pages", query: "pageQuery"})
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -100,25 +99,20 @@ export default function (app: App): any {
             function checkSlug(slug: any): Boolean {
                 let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
                 if (regex?.find(slug) == null) return false
-                return true
+                else return true
             }
 
             function checkName(title: String): Boolean {
-                if (title == null) {
-                    return false
-                }
-                return true
+                if (title == null) return false
+                else return true
             }
 
-            (slug: String, title: String) => {
-                if (slug != null && !checkSlug(slug)) {
-                    return false
-                }
-                if (title != null && !checkName(title)) {
-                    return false
-                }
-                return true
-            }
+            if(slug != null && !checkSlug(slug)) return false
+            if(title != null && !checkName(title)) return false
+            
+            return true
+
+            
         }, { query: "availabilityQuery" })
 
         .patch("/:id", async ({ db, params: { id }, body }) => {
