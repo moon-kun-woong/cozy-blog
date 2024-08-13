@@ -86,8 +86,10 @@ export default function (app: App): any {
 
         .delete("/:slug", async ({ db, params: { slug } }) => {
             const result = await db
-                .delete(space)
-                .where(eq(space.slug, slug));
+                .update(space)
+                .set({state : 3})
+                .where(eq(space.slug, slug))
+
 
             return result;
         })
