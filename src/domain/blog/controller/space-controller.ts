@@ -1,13 +1,13 @@
 import { App } from "../../../types";
 import { space } from '../../../domain/blog/entity/index'
-import { eq, sql } from 'drizzle-orm'
+import { count, eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
 import { v4 as uuidv4 } from 'uuid';
 
 export default function (app: App): any {
     return app
         .use(spaceModel)
-        .get("/", async ({ db, query }) => {    
+        .get("/", async ({ db, query }) => {
             const currentPage = parseInt(query.page ?? '0');
             const sizeNumber = parseInt(query.size ?? '20');
 
@@ -26,14 +26,17 @@ export default function (app: App): any {
                 .offset(offset)
                 .all()
 
-            // TODO: fix it
-            return {
+            const [totalCount] = await db
+                .select({ count: count() })
+                .from(space)
+
+           return {
                 content,
                 currentPage,
-                totalPage: 0,
-                totalCount: 0
+                totalPage: Math.ceil(totalCount.count / sizeNumber),
+                totalCount: totalCount.count
             }
-        }, { response: "simples", query: "pageQuery"})
+        }, { response: "simples", query: "pageQuery" })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -90,8 +93,8 @@ export default function (app: App): any {
         })
 
         .get("/availability", async ({ query: { slug, title } }) => {
-            if(slug != null && !checkSlug(slug)) return false
-            if(title != null && !checkName(title)) return false
+            if (slug != null && !checkSlug(slug)) return false
+            if (title != null && !checkName(title)) return false
             return true
         }, { query: "availabilityQuery" })
 
