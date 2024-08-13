@@ -1,7 +1,7 @@
 import cors from '@elysiajs/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import Elysia, { type ElysiaConfig } from 'elysia'
-import { logger } from './domain/blog/plugins'
+import { logger } from './plugins'
 
 export type Config = ElysiaConfig<string, false>
 

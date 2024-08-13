@@ -8,10 +8,10 @@ export default function (app: App): any {
     return app
         .use(spaceModel)
         .get("/", async ({ db, query }) => {    
-            const currnetPage = parseInt(query.page ?? '0');
+            const currentPage = parseInt(query.page ?? '0');
             const sizeNumber = parseInt(query.size ?? '20');
 
-            const offset = currnetPage * sizeNumber;
+            const offset = currentPage * sizeNumber;
 
             const content = await db
                 .select({
@@ -26,15 +26,14 @@ export default function (app: App): any {
                 .offset(offset)
                 .all()
 
-            console.log(query);
-
+            // TODO: fix it
             return {
-                content: content,
-                currentPage: currnetPage,
-                totalPage: Math.ceil(currnetPage / sizeNumber),
-                totalCount: currnetPage
+                content,
+                currentPage,
+                totalPage: 0,
+                totalCount: 0
             }
-        }, { response: "pages", query: "pageQuery"})
+        }, { response: "simples", query: "pageQuery"})
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -91,27 +90,9 @@ export default function (app: App): any {
         })
 
         .get("/availability", async ({ query: { slug, title } }) => {
-
-            slug = slug;
-            title = title;
-
-            function checkSlug(slug: any): Boolean {
-                let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
-                if (regex?.find(slug) == null) return false
-                else return true
-            }
-
-            function checkName(title: String): Boolean {
-                if (title == null) return false
-                else return true
-            }
-
             if(slug != null && !checkSlug(slug)) return false
             if(title != null && !checkName(title)) return false
-            
             return true
-
-            
         }, { query: "availabilityQuery" })
 
         .patch("/:id", async ({ db, params: { id }, body }) => {
@@ -128,4 +109,15 @@ export default function (app: App): any {
 
             return result;
         }, { response: "detail", body: "update" })
+}
+
+function checkSlug(slug: any): Boolean {
+    let regex = new RegExp("\w+").exec("^[a-zA-Z0-9가-힣\-_]+$")
+    if (regex?.find(slug) == null) return false
+    else return true
+}
+
+function checkName(title: String): Boolean {
+    if (title == null) return false
+    else return true
 }
