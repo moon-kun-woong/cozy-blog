@@ -1,5 +1,6 @@
+import { isNotNull, isNull } from "drizzle-orm";
 import Elysia, { t } from "elysia";
-import { isNotEmpty } from "elysia/handler";
+import { pageQuery, pageResponse, pages } from "../../page";
 
 export enum SpaceState {
     NONE = 0,
@@ -9,7 +10,7 @@ export enum SpaceState {
 }
 
 export const querySchema = t.Object({
-    id: t.Array(t.Number({ default: null })),
+    id: t.Array(t.String({ default: null })),
     uid: t.Array(t.String({ default: null })),
     title: t.Array(t.String({ default: null })),
     state: t.Array(t.Enum(SpaceState, { default: null })),
@@ -17,7 +18,7 @@ export const querySchema = t.Object({
 })
 
 export const simpleSchema = t.Object({
-    id: t.Number(),
+    id: t.String(),
     slug: t.String(),
     title: t.String(),
     state: t.Enum(SpaceState),
@@ -25,7 +26,8 @@ export const simpleSchema = t.Object({
 })
 
 export const detailSchema = t.Object({
-    id: t.Number(),
+    id: t.String(),
+    uid: t.String(),
     slug: t.String(),
     metaDatabaseId: t.String(),
     postDatabaseId: t.String(),
@@ -34,12 +36,9 @@ export const detailSchema = t.Object({
     lastRefreshedAt: t.Date(),
     createdAt: t.Date(),
     updatedAt: t.Date(),
-    uid: t.String(),
 })
 
 export const createSchema = t.Object({
-    slug: t.String(),
-
     metaDatabaseId: t.String(),
     postDatabaseId: t.String(),
 
@@ -55,21 +54,22 @@ export const updateSchema = t.Object({
 })
 
 export const refreshActionSchema = t.Object({
-    type: t.String().use(isNotEmpty)
+    type: t.String(isNotNull)
 })
 
 export const availabilityQuerySchema = t.Object({
-    title: t.String({default: null}),
-    slug: t.String({default: null})
+    title: t.Optional(t.String(isNull)),
+    slug: t.Optional(t.String(isNull))
 })
 
 export const spaceModel = new Elysia()
     .model({
         query: querySchema,
-        simple: simpleSchema,
+        simples: pageResponse(t.Array(simpleSchema)),
         detail: detailSchema,
         create: createSchema,
         update: updateSchema,
         refresh: refreshActionSchema,
-        availabilityQuery: availabilityQuerySchema
+        availabilityQuery: availabilityQuerySchema,
+        pageQuery: pageQuery
     })
