@@ -4,7 +4,6 @@ import { eq, sql } from 'drizzle-orm'
 import { spaceModel, SpaceState } from "../models/space";
 import { v4 as uuidv4 } from 'uuid';
 
-
 export default function (app: App): any {
     return app
         .use(spaceModel)
