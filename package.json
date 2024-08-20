@@ -1,0 +1,32 @@
+{
+  "name": "comwit-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types",
+    "migration:generate": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.4.5",
+    "@cloudflare/workers-types": "^4.20240806.0",
+    "@eslint/js": "^9.9.0",
+    "drizzle-kit": "^0.24.0",
+    "eslint": "^9.9.0",
+    "globals": "^15.9.0",
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^8.1.0",
+    "vitest": "1.5.0",
+    "wrangler": "^3.60.3"
+  },
+  "dependencies": {
+    "@bogeychan/elysia-logger": "^0.1.1",
+    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/swagger": "1.0.5",
+    "drizzle-orm": "^0.33.0",
+    "elysia": "^1.1.6"
+  }
+}
