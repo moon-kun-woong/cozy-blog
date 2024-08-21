@@ -99,6 +99,7 @@ export default function (app: App): any {
             return true
         }, { query: "availabilityQuery", detail: { tags: ['space'] } })
 
+
         .patch("/:id", async ({ db, params: { id }, body }) => {
             const { metaDatabaseId, postDatabaseId, title, state } = body;
             const [result] = await db
