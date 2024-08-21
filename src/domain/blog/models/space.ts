@@ -71,5 +71,5 @@ export const spaceModel = new Elysia()
         update: updateSchema,
         refresh: refreshActionSchema,
         availabilityQuery: availabilityQuerySchema,
-        pageQuery: pageQuery
+        pageQuery: pageQuery,
     })

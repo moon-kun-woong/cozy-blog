@@ -30,13 +30,13 @@ export default function (app: App): any {
                 .select({ count: count() })
                 .from(space)
 
-           return {
+            return {
                 content,
                 currentPage,
                 totalPage: Math.ceil(totalCount.count / sizeNumber),
                 totalCount: totalCount.count
             }
-        }, { response: "simples", query: "pageQuery" })
+        }, { response: "simples", query: "pageQuery", detail: { tags: ['space'] } })
 
         .get("/:slug", async ({ db, params: { slug } }) => {
             const [result] = await db
@@ -45,7 +45,7 @@ export default function (app: App): any {
                 .where(eq(space.slug, slug));
 
             return result;
-        }, { response: "detail" })
+        }, { response: "detail", detail: { tags: ['space'] } })
 
         .post("/:slug", async ({ db, params: { slug }, body }) => {
             const { uid, title, metaDatabaseId, postDatabaseId } = body;
@@ -67,7 +67,7 @@ export default function (app: App): any {
                 }).returning();
 
             return result;
-        }, { body: 'create', response: "detail" })
+        }, { body: 'create', response: "detail", detail: { tags: ['space'] } })
 
         .put("/:slug", async ({ db, params: { slug }, body }) => {
             const { metaDatabaseId, postDatabaseId, title, state } = body;
@@ -82,23 +82,23 @@ export default function (app: App): any {
                 .where(eq(space.slug, slug)).returning();
 
             return result;
-        }, { body: "update", response: "detail" })
+        }, { body: "update", response: "detail", detail: { tags: ['space'] } })
 
         .delete("/:slug", async ({ db, params: { slug } }) => {
             const result = await db
                 .update(space)
-                .set({state : 3})
+                .set({ state: 3 })
                 .where(eq(space.slug, slug))
 
-
             return result;
-        })
+        }, { detail: { tags: ['space'] } })
 
         .get("/availability", async ({ query: { slug, title } }) => {
             if (slug != null && !checkSlug(slug)) return false
             if (title != null && !checkName(title)) return false
             return true
-        }, { query: "availabilityQuery" })
+        }, { query: "availabilityQuery", detail: { tags: ['space'] } })
+
 
         .patch("/:id", async ({ db, params: { id }, body }) => {
             const { metaDatabaseId, postDatabaseId, title, state } = body;
@@ -113,7 +113,7 @@ export default function (app: App): any {
                 .where(sql`id=${id}`).returning();
 
             return result;
-        }, { response: "detail", body: "update" })
+        }, { response: "detail", body: "update", detail: { tags: ['space'] } })
 }
 
 function checkSlug(slug: any): Boolean {

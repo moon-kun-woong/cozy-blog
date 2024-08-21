@@ -1,0 +1,13 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1724156260551,
+      "tag": "0000_outstanding_omega_sentinel",
+      "breakpoints": true
+    }
+  ]
+}
