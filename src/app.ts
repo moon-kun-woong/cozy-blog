@@ -28,6 +28,9 @@ const errorHandler = ({
   if (code === "NOT_FOUND") {
     return json({ code, message: "Route not found" }, 404);
   }
+  if (code === "VALIDATION"){
+    return json({ code, message: "Bad request. check validate error"}, 400)
+  }
   console.error(code, error);
   return json({ code, message: error.message }, 500);
 };

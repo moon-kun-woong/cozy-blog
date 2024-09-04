@@ -1,28 +1,48 @@
 import { t } from "elysia";
-import { spaceModel, query } from "../model/space";
+import { spaceModel, query, SpaceState } from "../model/space";
 import { pageRequest, UUID } from "../model/global";
 import { createBase } from "./util";
+import { space } from "../entity";
+import { count, eq, sql } from "drizzle-orm";
 
 export const spaceController = createBase("space")
   .use(spaceModel)
   .get(
-    "",
-    ({ log, query }) => {
+    "/",
+    async ({ log, db, query }) => {
       log.debug(query);
-      // todo: Implement findAll logic
+      const currentPage = query.page ?? 1;
+      const sizeNumber = query.size ?? 20;
+
+      const offset = (currentPage - 1) * sizeNumber;
+
+      const result = await db
+        .select({
+          id: space.id,
+          uid: space.uid,
+          title: space.title,
+          slug: space.slug,
+          state: space.state,
+        })
+        .from(space)
+        .limit(parseInt(`${sizeNumber}`))
+        .offset(offset)
+        .all()
+
+      const content = result.map(space => ({
+        ...space,
+        state: SpaceState.anyOf.at(space.state)?.const || 'NONE'
+      }));
+
+      const [totalCount] = await db
+        .select({ count: count() })
+        .from(space)
+
       return {
-        content: [
-          {
-            id: "00000000-0000-0000-0000-000000000000",
-            uid: "00000000-0000-0000-0000-000000000000",
-            slug: "dummy-slug",
-            title: "Dummy Space",
-            state: "ACTIVATED",
-          },
-        ],
-        currentPage: 1,
-        totalPage: 1,
-        totalCount: 1,
+        content,
+        currentPage: parseInt(`${currentPage}`),
+        totalPage: Math.ceil(totalCount.count / sizeNumber),
+        totalCount: totalCount.count
       };
     },
     {
@@ -32,20 +52,21 @@ export const spaceController = createBase("space")
   )
   .get(
     "/:slug",
-    ({ params: { slug } }) => {
-      // todo: Implement find logic
-      return {
-        id: "00000000-0000-0000-0000-000000000000",
-        slug: slug,
-        metaDatabaseId: "00000000-0000-0000-0000-000000000000",
-        postDatabaseId: "00000000-0000-0000-0000-000000000000",
-        title: "Dummy Space",
-        state: "ACTIVATED",
-        lastRefreshedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        uid: "dummy-uid",
+    async ({ db, params: { slug } }) => {
+      const [result] = await db
+        .select()
+        .from(space)
+        .where(eq(space.slug, slug));
+
+      const content = {
+        ...result,
+        state: SpaceState.anyOf.at(result.state)?.const || 'NONE',
+        lastRefreshedAt: result.lastRefreshedAt.toISOString(),
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
       };
+
+      return content;
     },
     {
       params: t.Object({
@@ -54,19 +75,31 @@ export const spaceController = createBase("space")
       response: "detail",
     },
   )
-  .post(
-    "",
-    ({ body }) => {
-      // todo: Implement create logic
-      return {
-        id: "00000000-0000-0000-0000-000000000000",
-        ...body,
-        state: "ACTIVATED",
-        lastRefreshedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    },
+  .post("/", async ({ db, body }) => {
+    const { uid, slug, title, metaDatabaseId, postDatabaseId } = body;
+
+    const [result] = await db
+      .insert(space)
+      .values({
+        id: crypto.randomUUID(),
+        uid,
+        slug,
+        metaDatabaseId,
+        postDatabaseId,
+        title,
+        lastRefreshedAt: new Date(),
+      }).returning();
+
+    const content = {
+      ...result,
+      state: SpaceState.anyOf.at(result.state)?.const || 'NONE',
+      lastRefreshedAt: result.lastRefreshedAt.toISOString(),
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    };
+
+    return content;
+  },
     {
       body: "create",
       response: "detail",
@@ -74,21 +107,30 @@ export const spaceController = createBase("space")
   )
   .put(
     "/:slug",
-    ({ log, params: { slug }, body }) => {
-      log.debug(body);
-      // todo: Implement update logic
-      return {
-        id: "00000000-0000-0000-0000-000000000000",
-        title: "Dummy Space",
-        state: "ACTIVATED",
-        slug: slug,
-        metaDatabaseId: "00000000-0000-0000-0000-000000000000",
-        postDatabaseId: "00000000-0000-0000-0000-000000000000",
-        lastRefreshedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        uid: "dummy-uid",
+    async ({ db, params: { slug }, body }) => {
+      const { metaDatabaseId, postDatabaseId, title, state } = body;
+
+      const transformState = SpaceState.anyOf.findIndex(item => item.const === state)
+
+      const [result] = await db
+        .update(space)
+        .set({
+          title,
+          state: transformState,
+          metaDatabaseId,
+          postDatabaseId,
+        })
+        .where(eq(space.slug, slug)).returning();
+
+      const content = {
+        ...result,
+        state: SpaceState.anyOf.at(result.state)?.const || 'NONE',
+        lastRefreshedAt: result.lastRefreshedAt.toISOString(),
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
       };
+
+      return content;
     },
     {
       params: t.Object({
@@ -100,10 +142,13 @@ export const spaceController = createBase("space")
   )
   .delete(
     "/:slug",
-    ({ log, params: { slug } }) => {
-      log.debug(slug);
-      // todo: Implement delete logic
-      return null;
+    async ({ db, params: { slug } }) => {
+      const result = await db
+        .update(space)
+        .set({ state: 3 })
+        .where(eq(space.slug, slug))
+
+      return result;
     },
     {
       params: t.Object({
@@ -131,10 +176,23 @@ export const spaceController = createBase("space")
   )
   .get(
     "/availability",
-    ({ log, query }) => {
+    async ({ log, db, query }) => {
       log.debug(query);
-      // todo: Implement checkAvailability logic
-      return true;
+      const result = await db
+        .select({
+          title: space.title,
+          slug: space.slug
+        })
+        .from(space)
+        .all()
+
+      const checkDuplicateTitle = result.length === 0 || result.map(space => space.title !== query.title)
+      const checkDuplicateSlug = result.length === 0 || result.map(space => space.slug !== query.slug)
+
+      if (checkDuplicateTitle == checkDuplicateSlug == checkSlug(query.slug)) {
+        return true
+      } else return false
+
     },
     {
       query: "availabilityQuery",
@@ -142,21 +200,30 @@ export const spaceController = createBase("space")
   )
   .patch(
     "/:id",
-    ({ log, params: { id }, body }) => {
+    async ({ log, db, params: { id }, body }) => {
       log.debug(body);
-      // todo: Implement update logic
-      return {
-        id: id,
-        title: "Dummy Space",
-        state: "ACTIVATED",
-        slug: "dummy-slug",
-        metaDatabaseId: "00000000-0000-0000-0000-000000000000",
-        postDatabaseId: "00000000-0000-0000-0000-000000000000",
-        lastRefreshedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        uid: "dummy-uid",
+      const { metaDatabaseId, postDatabaseId, title, state } = body;
+
+      const transformState = SpaceState.anyOf.findIndex(item => item.const === state)
+      const [result] = await db
+        .update(space)
+        .set({
+          title,
+          state: transformState,
+          metaDatabaseId,
+          postDatabaseId,
+        })
+        .where(sql`id=${id}`).returning();
+
+      const content = {
+        ...result,
+        state: SpaceState.anyOf.at(result.state)?.const || 'NONE',
+        lastRefreshedAt: result.lastRefreshedAt.toISOString(),
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
       };
+
+      return content;
     },
     {
       params: t.Object({
@@ -166,3 +233,8 @@ export const spaceController = createBase("space")
       response: "detail",
     },
   );
+
+function checkSlug(slug: any): Boolean {
+  const regex = new RegExp("^[a-zA-Z0-9가-힣\-_]+$")
+  return regex.test(slug)
+}

@@ -8,7 +8,7 @@ export type Config = ElysiaConfig<string, false>;
 export function setup(env: Env) {
   const config: Config = { name: "setup" };
   return new Elysia(config)
-    .decorate("db", drizzle(env.DB))
+    .decorate("db", drizzle(env.DB, { logger: true }))
     .use(cors())
-    .use(logger());
+    .use(logger({ autoLogging : false }));
 }

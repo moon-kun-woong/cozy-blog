@@ -181,7 +181,12 @@ describe("Space API test", () => {
       .select()
       .from(space)
       .where(eq(space.id, testSpace.id));
-    expect(deletedSpace.state).toBe(SpaceState.DELETED);
+
+    const spaceStateTypeCheck = {
+      ...deletedSpace,
+      state: SpaceState.anyOf.at(deletedSpace.state)?.const
+    }
+    expect(spaceStateTypeCheck.state).toBe("DELETED");
 
     await deleteSpace(testSpace.id);
   });

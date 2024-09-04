@@ -24,10 +24,10 @@ export const space = sqliteTable(
     }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(unixepoch())`),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(unixepoch())`),
   },
   (table) => ({
     uidIdx: index("space_uid_idx").on(table.uid),
@@ -57,10 +57,10 @@ export const post = sqliteTable(
     thumbnail: text("thumbnail").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(unixepoch())`),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(unixepoch())`),
   },
   (table) => ({
     slugIdx: index("post_slug_idx").on(table.slug),
@@ -94,10 +94,10 @@ export const postLike = sqliteTable("post_like", {
   state: integer("state").notNull().default(PostLikeState.EXISTED),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
 });
 
 // Meta related definitions
@@ -116,7 +116,7 @@ export const meta = sqliteTable("meta", {
   title: text("title").notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
 });
 
 export const metaContent = sqliteTable("meta_content", {
@@ -144,10 +144,10 @@ export const metaImage = sqliteTable("meta_image", {
   seq: integer("seq").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
 });
 
 // RefreshRequest related definitions
@@ -187,10 +187,10 @@ export const refreshRequest = sqliteTable("refresh_request", {
   state: integer("state").notNull().default(RefreshRequestState.TODO),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
 });
 
 // MemberConnection definition
@@ -199,8 +199,8 @@ export const memberConnection = sqliteTable("member_connection", {
   accessToken: text("access_token").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(unixepoch())`),
 });
