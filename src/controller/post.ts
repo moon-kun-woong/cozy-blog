@@ -60,12 +60,12 @@ export const postController = createBase("post")
     },
     {
       query: t.Composite([query, pageRequest]),
-      response: "simples",
+      response: "post.simples",
     },
   )
   .get(
     "/:id",
-    async ({ db, params: { id } }) => {
+    async ({ log, db, params: { id } }) => {
       const [result] = await db
         .select({
           id: post.id,
@@ -111,15 +111,13 @@ export const postController = createBase("post")
       params: t.Object({
         id: t.String(),
       }),
-      response: "detail",
+      response: "post.detail",
     },
   )
 
-function nullCheck(posts: any) {
-  for (const post of posts) {
-    if (post.space.id == null) {
-      console.error("Unprocessable Content: spaceId is null", 405);
-      throw error("Unprocessable Content");
-    }
+function nullCheck(post: any) {
+  if (post.space.id == null) {
+    console.error("Unprocessable Content: spaceId is null", 405);
+    throw error("Unprocessable Content");
   }
 }

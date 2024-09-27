@@ -47,7 +47,7 @@ export const spaceController = createBase("space")
     },
     {
       query: t.Composite([query, pageRequest]),
-      response: "simples",
+      response: "space.simples",
     },
   )
   .get(
@@ -72,7 +72,7 @@ export const spaceController = createBase("space")
       params: t.Object({
         slug: t.String(),
       }),
-      response: "detail",
+      response: "space.detail",
     },
   )
   .post("/", async ({ db, body }) => {
@@ -101,8 +101,8 @@ export const spaceController = createBase("space")
     return content;
   },
     {
-      body: "create",
-      response: "detail",
+      body: "space.create",
+      response: "space.detail",
     },
   )
   .put(
@@ -136,8 +136,8 @@ export const spaceController = createBase("space")
       params: t.Object({
         slug: t.String(),
       }),
-      body: "update",
-      response: "detail",
+      body: "space.update",
+      response: "space.detail",
     },
   )
   .delete(
@@ -195,7 +195,7 @@ export const spaceController = createBase("space")
 
     },
     {
-      query: "availabilityQuery",
+      query: "space.availabilityQuery",
     },
   )
   .patch(
@@ -229,8 +229,8 @@ export const spaceController = createBase("space")
       params: t.Object({
         id: UUID,
       }),
-      body: "update",
-      response: "detail",
+      body: "space.update",
+      response: "space.detail",
     },
   );
 

@@ -65,10 +65,10 @@ export type SpaceUpdate = Static<typeof update>;
 export type SpaceAvailabilityQuery = Static<typeof availabilityQuery>;
 
 export const spaceModel = new Elysia().model({
-  query,
-  simples: pageResponse(simple),
-  detail,
-  create,
-  update,
-  availabilityQuery,
+  'space.query': query,
+  'space.simples': pageResponse(simple),
+  'space.detail': detail,
+  'space.create': create,
+  'space.update': update,
+  'space.availabilityQuery': availabilityQuery,
 });

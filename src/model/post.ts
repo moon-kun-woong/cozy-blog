@@ -99,12 +99,12 @@ export type PostLikeDetail = Static<typeof likeDetail>;
 export type PostLikeUpdate = Static<typeof likeUpdate>;
 
 export const postModel = new Elysia().model({
-  query,
-  simples: pageResponse(simple),
-  detail,
-  likeQuery,
-  likeCreate,
-  likeDetail,
-  likeUpdate,
-  likeSimples: pageResponse(likeDetail),
+  'post.query': query,
+  'post.simples': pageResponse(simple),
+  'post.detail': detail,
+  'post.likeQuery': likeQuery,
+  'post.likeCreate': likeCreate,
+  'post.likeDetail': likeDetail,
+  'post.likeUpdate': likeUpdate,
+  'post.likeSimples': pageResponse(likeDetail),
 });
