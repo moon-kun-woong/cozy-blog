@@ -1,9 +1,9 @@
 
-export async function notionProxyController(bearer: string, postDatabaseId: string) {
+export async function notionProxyController(bearer: string, databaseId: string) {
 
-  const fetchAllPages =
+  const response =
     await fetch(
-      `https://notion-api.tech9065.workers.dev/database/${postDatabaseId}/page`,
+      `https://notion-api.tech9065.workers.dev/database/${databaseId}/page`,
       {
         method: 'GET',
         headers: {
@@ -11,6 +11,9 @@ export async function notionProxyController(bearer: string, postDatabaseId: stri
           "Content-Type": "application/json",
         },
       })
+  if (!response.ok) {
+    throw new Error(`페이지를 가져오는데 실패했습니다: ${response.statusText}`);
+  }
 
-  return fetchAllPages
+  return response
 }

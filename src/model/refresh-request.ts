@@ -51,7 +51,7 @@ export type RefreshRequestSimple = Static<typeof simple>;
 export type RefreshRequestCreate = Static<typeof create>;
 
 export const refreshRequestModel = new Elysia().model({
-  query,
-  simples: pageResponse(simple),
-  create,
+  "refreshRequest.query": query,
+  "refreshRequest.simples": pageResponse(simple),
+  "refreshRequest.create": create,
 });

@@ -1,8 +1,8 @@
 import { error, t } from "elysia";
-import { refreshRequestModel, query } from "../model/refresh-request";
+import { refreshRequestModel, query, RefreshRequestType, RefreshRequestSourceType, RefreshRequestState } from "../model/refresh-request";
 import { pageRequest } from "../model/global";
 import { createBase } from "./util";
-import { memberConnection, post, space } from "../entity";
+import { memberConnection, meta, post, refreshRequest, space } from "../entity";
 import { eq } from "drizzle-orm";
 import { notionProxyController } from "./client";
 
@@ -33,19 +33,19 @@ export const refreshRequestController = createBase("refresh_request")
     },
     {
       query: t.Composite([query, pageRequest]),
-      response: "simples",
+      response: "refreshRequest.simples",
     },
   )
   .post(
     "/",
     async ({ log, db, body }) => {
       log.debug(body);
-      if (body.sourceType != "SPACE" && body.space != null) {
+      if (body.sourceType != RefreshRequestSourceType.SPACE) {
         log.error(`Type(${body.sourceType}) was not supported.`)
         return error("Bad Request")
       }
 
-      if (!body.space) {
+      if (!body.space || body.space == null) {
         log.error("Space slug is missing.");
         return error("Bad Request");
       }
@@ -60,57 +60,72 @@ export const refreshRequestController = createBase("refresh_request")
         .from(memberConnection)
         .where(eq(memberConnection.uid, fetchedSpace.uid));
 
-      log.info("=-=======================")
-      log.info(accessToken)
-      log.info(fetchedSpace)
+      const fetchPosts = await db
+        .select()
+        .from(post)
+        .where(eq(post.spaceId, fetchedSpace.id))
 
-      // notion postPage 를 불러오는 함수 작성할 것.
-      const nodes = fetchPageNodes(accessToken.accessToken, fetchedSpace);
+      const nodes = await fetchPageNodes(accessToken.accessToken, fetchedSpace);
 
-      // fetchedSpace.postDatabaseId.map(node => {
-      //   if (node.id == nodes.id.toString()) {
-      //     node.state = 3
-      //   }
-      // });
+      fetchPosts
+        .filter(post => nodes.every(node => node.id !== post.id.toString()))
+        .forEach(it => db.update(post).set({ state: 3 }).where(eq(post.id, it.id)))
 
-      // const refreshRequests = checkNewOrUpdated(nodes, fetchedSpace)
+      const refreshRequests = nodes
+        .filter(node => checkNewOrUpdated(node, space))
+        .map(node => ({
+          id: crypto.randomUUID(),
+          spaceId: fetchedSpace.id,
+          sourceType: RefreshRequestSourceType.SPACE,
+          pageId: node.id,
+          type: node.RefreshRequestType,
+          state: RefreshRequestState.TODO,
+          createdAt: new Date,
+          updatedAt: new Date,
+        }))
 
-      // const result = db
-      //   .insert(space)
-      //   .values()
-      //   .returning()
+      const [addRefreshRequest] = await db
+        .insert(refreshRequest)
+        .values(refreshRequests)
+        .returning()
 
+      const result = {
+        ...addRefreshRequest,
+        type: RefreshRequestType.anyOf.at(addRefreshRequest.type)?.const || 'NONE',
+        state: RefreshRequestState.anyOf.at(addRefreshRequest.state)?.const || 'NONE',
+        sourceType: RefreshRequestSourceType.anyOf.at(addRefreshRequest.sourceType)?.const || 'NONE',
+        createdAt: addRefreshRequest.createdAt.toISOString(),
+        updatedAt: addRefreshRequest.updatedAt.toISOString(),
+      }
 
-      return nodes;
+      return result;
     },
     {
-      body: "create",
+      body: "refreshRequest.create",
     },
   );
 
-async function fetchPageNodes(bearer: string, posts: any): Promise<Array<any>> {
-  const postTask = await notionProxyController(bearer, posts.postDatabaseId)
-  console.log("체크 페이지올포스트")
-  console.log(postTask)
+async function fetchPageNodes(bearer: string, space: any): Promise<any[]> {
+  const postResponse = await notionProxyController(bearer, space.postDatabaseId);
+  const metaResponse = await notionProxyController(bearer, space.metaDatabaseId);
 
-  const metaTask = await notionProxyController(bearer, posts.metaDatabaseId)
+  const postTask = await postResponse.json() as any
+  const metaTask = await metaResponse.json() as any
 
-  const postResults = postTask.map((post: any) => new PostNodeWrapper(post))
-  const metaResults = metaTask.map((meta: any) => new MetaNodeWrapper(meta))
-
-  return [...postResults, ...metaResults]
+  return [...postTask, ...metaTask]
 }
 
-function checkNewOrUpdated(node: any, posts: any) {
+function checkNewOrUpdated(node: any, spaceNode: typeof space): Boolean {
   const pageId = node.id
-  const updatedAt = posts.map(post => {
-    if (post.id.toString() == pageId) {
-      post.updated_at
-    }
-  })
-  return updatedAt
-}
+  let updatedAt = null
 
-interface PostNodeWrapper {
+  if (spaceNode.postDatabaseId === pageId.id) {
+    updatedAt = post.updatedAt ?? null
+  }
+  else if (spaceNode.metaDatabaseId === pageId.id) {
+    updatedAt = meta.updatedAt ?? null
+  }
+
+  return updatedAt === null || updatedAt > updatedAt
 
 }
