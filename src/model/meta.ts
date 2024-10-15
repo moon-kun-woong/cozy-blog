@@ -56,7 +56,7 @@ export type MetaSimple = Static<typeof simple>;
 export type MetaDetail = Static<typeof detail>;
 
 export const metaModel = new Elysia().model({
-  query,
-  simples: pageResponse(simple),
-  detail,
+  "meta.query": query,
+  "meta.simples": pageResponse(simple),
+  "meta.detail": detail,
 });
