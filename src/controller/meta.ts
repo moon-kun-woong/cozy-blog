@@ -2,7 +2,7 @@ import { t } from "elysia";
 import { MetaImageCategory, metaModel, MetaTitle, query } from "../model/meta";
 import { pageRequest, UUID } from "../model/global";
 import { createBase } from "./util";
-import { meta, metaImage, space } from "../entity";
+import { meta, metaContent, metaImage, space } from "../entity";
 import { count, eq } from "drizzle-orm";
 
 export const metaController = createBase("meta")
@@ -21,7 +21,7 @@ export const metaController = createBase("meta")
           id: meta.id,
           title: meta.title,
           updatedAt: meta.updatedAt,
-          image: {
+          images: {
             metaId: metaImage.metaId,
             category: metaImage.category,
             url: metaImage.url,
@@ -47,7 +47,7 @@ export const metaController = createBase("meta")
       }
 
       let images: Array<MetaImage>;
-      images = result.map(it => it.image);
+      images = result.map(it => it.images);
 
       const processImages = images.map(img => ({
         ...img,
@@ -92,26 +92,49 @@ export const metaController = createBase("meta")
   )
   .get(
     "/:id",
-    ({ log, params: { id } }) => {
+    async ({ log, db, params: { id } }) => {
       log.debug(id);
-      // todo: Implement find logic
-      return {
-        id: id,
-        title: "HOME",
-        content: {},
-        updatedAt: new Date().toISOString(),
-        images: [
-          {
-            category: "MAIN",
-            url: "https://example.com/image.jpg",
-            seq: 1,
+
+      const [result] = await db
+        .select({
+          id: meta.id,
+          title: meta.title,
+          content: metaContent.json,
+          updatedAt: meta.updatedAt,
+          images: {},
+          space: {
+            id: space.id,
+            slug: space.slug,
           },
-        ],
-        space: {
-          id: "00000000-0000-0000-0000-000000000000",
-          slug: "dummy-space",
-        },
-      };
+        })
+        .from(meta)
+        .where(eq(meta.id, id))
+        .innerJoin(space, eq(meta.spaceId, space.id))
+        .innerJoin(metaContent, eq(metaContent.metaId, id))
+
+      const images = await db
+        .select({
+          category: metaImage.category,
+          url: metaImage.url,
+          seq: metaImage.seq,
+        })
+        .from(metaImage)
+        .where(eq(metaImage.metaId, meta.id))
+
+      const processImages = images.map(img => ({
+        ...img,
+        category: MetaImageCategory.anyOf.at(img.category)?.const || 'NONE'
+      }))
+
+      const content = {
+        ...result,
+        title: MetaTitle.meta.title,
+        content: Object(result.content),
+        updatedAt: result.updatedAt.toISOString(),
+        images: processImages
+      }
+
+      return content
     },
     {
       params: t.Object({
