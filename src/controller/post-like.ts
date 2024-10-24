@@ -1,96 +1,151 @@
 import { t } from "elysia";
-import { postModel, likeQuery } from "../model/post";
+import { postModel, likeQuery, PostLikeState } from "../model/post";
 import { pageRequest, UUID } from "../model/global";
 import { createBase } from "./util";
+import { post, postLike } from "../entity";
+import { count, eq } from "drizzle-orm";
 
 export const postLikeController = createBase("post_like")
   .use(postModel)
   .get(
-    "",
-    ({ log, query }) => {
+    "/",
+    async ({ db, log, query }) => {
       log.debug(query);
-      // todo: Implement findAll logic
+      const currentPage = query.page ?? 1;
+      const sizeNumber = query.size ?? 20;
+
+      const result = await db
+        .select({
+          id: postLike.id,
+          state: postLike.state,
+          spaceId: postLike.spaceId,
+          postId: postLike.postId,
+          createdAt: postLike.createdAt,
+          updatedAt: postLike.updatedAt,
+        })
+        .from(postLike)
+        .all()
+
+      const content = result.map(postLike => ({
+        ...postLike,
+        state: PostLikeState.anyOf.at(postLike.state)?.const || 'NONE',
+        createdAt: postLike.createdAt.toISOString(),
+        updatedAt: postLike.updatedAt.toISOString(),
+      }))
+
+
+      const [totalCount] = await db
+        .select({ count: count() })
+        .from(post)
+
+
       return {
-        content: [
-          {
-            id: "00000000-0000-0000-0000-000000000000",
-            state: "EXISTED",
-            spaceId: "00000000-0000-0000-0000-000000000000",
-            postId: "00000000-0000-0000-0000-000000000000",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        currentPage: 1,
-        totalPage: 1,
-        totalCount: 1,
+        content,
+        currentPage: parseInt(`${currentPage}`),
+        totalPage: Math.ceil(totalCount.count / sizeNumber),
+        totalCount: totalCount.count
       };
     },
     {
       query: t.Composite([likeQuery, pageRequest]),
-      response: "likeSimples",
+      response: "post.likeSimples",
     },
   )
   .get(
     "/:id",
-    ({ log, params: { id } }) => {
+    async ({ log, db, params: { id } }) => {
       log.debug(id);
-      // todo: Implement find logic
-      return {
-        id: id,
-        state: "EXISTED",
-        spaceId: "00000000-0000-0000-0000-000000000000",
-        postId: "00000000-0000-0000-0000-000000000000",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+
+      const [result] = await db
+        .select({
+          id: postLike.id,
+          state: postLike.state,
+          spaceId: postLike.spaceId,
+          postId: postLike.postId,
+          createdAt: postLike.createdAt,
+          updatedAt: postLike.updatedAt,
+        })
+        .from(postLike)
+        .where(eq(postLike.id, id))
+
+      const content = {
+        ...result,
+        state: PostLikeState.anyOf.at(result.state)?.const || 'NONE',
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
+      }
+
+      return content;
     },
     {
       params: t.Object({
         id: UUID,
       }),
-      response: "likeDetail",
+      response: "post.likeDetail",
     },
   )
   .post(
     "",
-    ({ log, body }) => {
+    async ({ log, db, body }) => {
       log.debug(body);
-      // todo: Implement create logic
-      return {
-        id: "00000000-0000-0000-0000-000000000000",
-        state: "EXISTED",
-        spaceId: "00000000-0000-0000-0000-000000000000",
-        postId: "00000000-0000-0000-0000-000000000000",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const { postId, spaceId } = body;
+
+      const [result] = await db
+        .insert(postLike)
+        .values({
+          id: crypto.randomUUID(),
+          postId,
+          spaceId
+        }).returning();
+
+      const content = {
+        ...result,
+        state: PostLikeState.anyOf.at(result.state)?.const || 'NONE',
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
+      }
+
+
+      return content;
     },
     {
-      body: "likeCreate",
-      response: "likeDetail",
+      body: "post.likeCreate",
+      response: "post.likeDetail",
     },
   )
   .put(
     "/:id",
-    ({ log, params: { id }, body }) => {
+    async ({ log, db, params: { id }, body }) => {
       log.debug(id);
       log.debug(body);
-      // todo: Implement update logic
-      return {
-        id: id,
-        state: "EXISTED",
-        spaceId: "00000000-0000-0000-0000-000000000000",
-        postId: "00000000-0000-0000-0000-000000000000",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+
+      const { spaceId, postId, state } = body;
+
+      const transformState = PostLikeState.anyOf.findIndex(item => item.const === state)
+
+      const [result] = await db
+        .update(postLike)
+        .set({
+          spaceId,
+          postId,
+          state: transformState
+        })
+        .where(eq(postLike.id, id)).returning();
+
+      const content = {
+        ...result,
+        state: PostLikeState.anyOf.at(result.state)?.const || 'NONE',
+        createdAt: result.createdAt.toISOString(),
+        updatedAt: result.updatedAt.toISOString(),
+      }
+
+      return content;
     },
     {
       params: t.Object({
         id: UUID,
       }),
-      body: "likeUpdate",
-      response: "likeDetail",
+      body: "post.likeUpdate",
+      response: "post.likeDetail",
     },
   );
