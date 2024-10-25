@@ -7,5 +7,5 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "comwit"
-database_id = "ba22eb0a-b916-44bd-8cab-5459f151a962"
+database_id = "fbba6c62-2ac7-4f60-a81d-422c2247ddc7"
 migrations_dir = "./migrations"
