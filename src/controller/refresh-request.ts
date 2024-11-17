@@ -3,34 +3,55 @@ import { refreshRequestModel, query, RefreshRequestType, RefreshRequestSourceTyp
 import { DateTime, pageRequest } from "../model/global";
 import { createBase } from "./util";
 import { memberConnection, meta, post, refreshRequest, space } from "../entity";
-import { eq, TransactionRollbackError } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { fetchAllPages, fetchPage } from "./client";
 import { scanAndCache } from "./image-asset-handler";
-import { update } from "../model/space";
 
 export const refreshRequestController = createBase("refresh_request")
   .use(refreshRequestModel)
   .get(
-    "",
-    ({ log, query }) => {
+    "/",
+    async ({ db, log, query }) => {
       log.debug(query);
-      // todo: Implement findAll logic
+      const currentPage = query.page ?? 1;
+      const sizeNumber = query.size ?? 20;
+
+      const offset = (currentPage - 1) * sizeNumber;
+
+      const result = await db
+        .select({
+          id: refreshRequest.id,
+          spaceId: refreshRequest.spaceId,
+          sourceType: refreshRequest.sourceType,
+          pageId: refreshRequest.pageId,
+          type: refreshRequest.type,
+          state: refreshRequest.state,
+          createdAt: refreshRequest.createdAt,
+          updatedAt: refreshRequest.updatedAt,
+        })
+        .from(refreshRequest)
+        .limit(parseInt(`${sizeNumber}`))
+        .offset(offset)
+        .all()
+
+      const content = result.map(refreshRequest => ({
+        ...refreshRequest,
+        sourceType: RefreshRequestSourceType.anyOf.at(refreshRequest.sourceType)?.const || 'NONE',
+        type: RefreshRequestType.anyOf.at(refreshRequest.type)?.const || 'NONE',
+        state: RefreshRequestState.anyOf.at(refreshRequest.state)?.const || 'NONE',
+        createdAt: refreshRequest.createdAt.toISOString(),
+        updatedAt: refreshRequest.updatedAt.toISOString(),
+      }));
+
+      const [totalCount] = await db
+        .select({ count: count() })
+        .from(refreshRequest)
+
       return {
-        content: [
-          {
-            id: "00000000-0000-0000-0000-000000000000",
-            spaceId: "00000000-0000-0000-0000-000000000000",
-            sourceType: "SPACE",
-            pageId: "00000000-0000-0000-0000-000000000000",
-            type: "POST",
-            state: "TODO",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-        currentPage: 1,
-        totalPage: 1,
-        totalCount: 1,
+        content,
+        currentPage: parseInt(`${currentPage}`),
+        totalPage: Math.ceil(totalCount.count / sizeNumber),
+        totalCount: totalCount.count
       };
     },
     {
@@ -219,7 +240,7 @@ export const refreshRequestController = createBase("refresh_request")
                 .returning()
             }
             else if (targetRefreshRequest.type === RefreshRequestState.META) {
-
+              // 아직 안만들어진 녀석인거 같은데?
             }
             else {
               throw error("Expectation Failed")
@@ -232,8 +253,6 @@ export const refreshRequestController = createBase("refresh_request")
             targetRefreshRequest.state = RefreshRequestState.FAIL;
             throw error;
           }
-
-
         } finally {
           // targetRefvreshRequest 저장
         }
@@ -258,7 +277,7 @@ export const refreshRequestController = createBase("refresh_request")
     },
   );
 
-async function fetchPageNodes(bearer: string, space: any): Promise<any[]> {
+async function fetchPageNodes(bearer: string, space: any) {
   const postResponse = await fetchAllPages(bearer, space.postDatabaseId);
   const metaResponse = await fetchAllPages(bearer, space.metaDatabaseId);
 
@@ -268,15 +287,12 @@ async function fetchPageNodes(bearer: string, space: any): Promise<any[]> {
   return [...postTask, ...metaTask];
 }
 
-function checkNewOrUpdated(node: any, spaceNode: typeof space): Boolean {
+function checkNewOrUpdated(node: Node, spaceNode: typeof space): Boolean {
   const pageId = node.id;
-  let updatedAt = null;
+  let updatedAt = node.origin.updatedAt;
 
-  if (spaceNode.postDatabaseId === pageId.id) {
-    updatedAt = post.updatedAt ?? null
-  }
-  else if (spaceNode.metaDatabaseId === pageId.id) {
-    updatedAt = meta.updatedAt ?? null
+  if(typeof node.origin.properties == PostNode ){
+
   }
 
   return updatedAt === null || updatedAt > updatedAt;
