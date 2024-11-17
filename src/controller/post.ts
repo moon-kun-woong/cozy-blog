@@ -95,8 +95,6 @@ export const postController = createBase("post")
         .innerJoin(space, eq(post.spaceId, space.id))
         .innerJoin(postContent, eq(post.id, postContent.postId));
 
-      nullCheck(result);
-
       const content = {
         ...result,
         viewCount: 1, // 아직 작성되지 않은 코드 (plausible::getPageViewCounts)
@@ -114,10 +112,3 @@ export const postController = createBase("post")
       response: "post.detail",
     },
   )
-
-function nullCheck(post: any) {
-  if (post.space.id == null) {
-    console.error("Unprocessable Content: spaceId is null", 405);
-    throw error("Unprocessable Content");
-  }
-}
