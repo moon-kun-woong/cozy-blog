@@ -186,12 +186,13 @@ export const spaceController = createBase("space")
         .from(space)
         .all()
 
-      const checkDuplicateTitle = result.length === 0 || result.map(space => space.title !== query.title)
-      const checkDuplicateSlug = result.length === 0 || result.map(space => space.slug !== query.slug)
+      const checkDuplicateTitle = result.length !== 0 && result.map(space => space.title !== query.title)
+      const checkDuplicateSlug = result.length !== 0 && result.map(space => space.slug !== query.slug && checkSlug(query.slug))
 
-      if (checkDuplicateTitle == checkDuplicateSlug == checkSlug(query.slug)) {
-        return true
-      } else return false
+      if (!checkDuplicateTitle && !checkDuplicateSlug) {
+        return false
+      }
+      return true
 
     },
     {
