@@ -289,12 +289,16 @@ async function fetchPageNodes(bearer: string, space: any) {
 
 function checkNewOrUpdated(node: Node, spaceNode: typeof space): Boolean {
   const pageId = node.id;
-  let updatedAt = node.origin.updatedAt;
+  let updatedAt : Date | null;
+  const spaceUpdatedAt = spaceNode.updatedAt._.data;
 
-  if(typeof node.origin.properties == PostNode ){
-
+  if('thumbnail' in  node.origin.properties && 'slug' in node.origin.properties && pageId == spaceNode.id._.data){
+    updatedAt = spaceUpdatedAt;
+  } else if ('images' in node.origin.properties && 'title' in node.origin.properties && pageId == spaceNode.id._.data){
+    updatedAt = spaceUpdatedAt;
+  } else {
+    updatedAt = null;
   }
 
-  return updatedAt === null || updatedAt > updatedAt;
-
+  return updatedAt === null || node.origin.updatedAt > updatedAt;
 }
