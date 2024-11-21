@@ -179,9 +179,9 @@ export const refreshRequestController = createBase("refresh_request")
 
         try {
           log.debug(`Start to process refresh request: ${targetRefreshRequest}`);
-          let page
+          let notionNode: Node;
           try {
-            page = await fetchPage(
+            notionNode = await fetchPage(
               accessToken.accessToken,
               targetRefreshRequest.pageId
             );
@@ -191,9 +191,9 @@ export const refreshRequestController = createBase("refresh_request")
             throw error
           }
 
-          const replacedPage = () => {
+          const replacedPage = async () => {
             try {
-              const cachedPage = scanAndCache(Object(page));
+              const cachedPage = await scanAndCache(Object(notionNode));
               log.debug(`Finish image cache process: ${targetRefreshRequest}`);
               return cachedPage
             } catch (error) {
@@ -204,46 +204,75 @@ export const refreshRequestController = createBase("refresh_request")
           }
 
           try {
-            const page = Object(await replacedPage())
-
-            const replacedSpace = {
-              id: page.id,
-              uid: page.uid,
-              slug: page.slug,
-              metaDatabaseId: page.metaDatabaseId,
-              postDatabaseId: page.postDatabaseId,
-              title: page.title,
-              state: page.state,
-              lastRefreshedAt: page.lastRefreshedAt,
-              createdAt: page.createdAt,
-              updatedAt: page.updatedAt,
-            }
+            const fetchedPage = Object(await replacedPage())
 
             if (targetRefreshRequest.type === RefreshRequestState.POST) {
 
-              await db
-                .update(space)
-                .set(replacedSpace)
-                .where(eq(space.id, page.spaceId))
-              const [refreshPost] = await db.select().from(post).where(eq(post.spaceId, replacedSpace.id))
+              const postPage = {
+                id: fetchedPage.id,
+                spaceId: targetSpace.id,
+                state: fetchedPage.state,
+                slug: fetchedPage.slug,
+                title: fetchedPage.title,
+                tags: fetchedPage.tags,
+                description: fetchedPage.description,
+                thumbnail: fetchedPage.thumbnail,
+                createdAt: fetchedPage.createdAt,
+                updatedAt: fetchedPage.updatedAt
+              }
+              
+              const [refreshPost] = await db
+                .select()
+                .from(post)
+                .where(eq(post.spaceId, postPage.spaceId))
+
               if (refreshPost !== undefined) {
                 await db
                   .delete(post)
                   .where(eq(
                     post.spaceId,
-                    replacedSpace.id
+                    postPage.spaceId
                   ))
               }
               await db
                 .insert(post)
-                .values(page.post)
+                .values(postPage)
                 .returning()
             }
             else if (targetRefreshRequest.type === RefreshRequestState.META) {
-              // 아직 안만들어진 녀석인거 같은데?
+              const metaPage = {
+                id: fetchedPage.id,
+                spaceId: targetSpace.id,
+                title: fetchedPage.title,
+                images: fetchedPage.images,
+                updatedAt: fetchedPage.updatedAt,
+              }
+
+              await db
+                .update(space)
+                .set(metaPage)
+                .where(eq(space.id, metaPage.id))
+              
+              const [refreshMeta] = await db
+                .select()
+                .from(meta)
+                .where(eq(meta.spaceId, metaPage.spaceId))
+
+              if (refreshMeta !== undefined) {
+                await db
+                  .delete(meta)
+                  .where(eq(
+                    meta.spaceId,
+                    metaPage.spaceId
+                  ))
+              }
+              await db
+                .insert(meta)
+                .values(metaPage)
+                .returning()
             }
             else {
-              throw error("Expectation Failed")
+              throw error("Bad Request", `Wrong refresh request type: ${targetRefreshRequest.type}`)
             }
             log.debug(`Done to process refresh request: ${targetRefreshRequest}`);
             targetRefreshRequest.state = RefreshRequestState.DONE;
@@ -254,9 +283,11 @@ export const refreshRequestController = createBase("refresh_request")
             throw error;
           }
         } finally {
-          // targetRefvreshRequest 저장
+          await db
+            .update(space)
+            .set(targetSpace)
+            .where(eq(space.id, targetSpace.id));
         }
-
       }
 
       processRefreshRequest(addRefreshRequest.id, addRefreshRequest.createdAt);
