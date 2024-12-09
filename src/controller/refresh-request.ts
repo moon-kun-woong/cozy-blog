@@ -63,9 +63,9 @@ export const refreshRequestController = createBase("refresh_request")
     "/",
     async ({ log, db, body }) => {
       log.debug(body);
-      if (body.sourceType != RefreshRequestSourceType.SPACE) {
+      if (body.sourceType != "SPACE") {
         log.error(`Type(${body.sourceType}) was not supported.`)
-        return error("Bad Request")
+        return error("Bad Request",`Type(${body.sourceType}) was not supported.`)
       }
 
       if (!body.space || body.space == null) {
@@ -308,7 +308,7 @@ export const refreshRequestController = createBase("refresh_request")
     },
   );
 
-async function fetchPageNodes(bearer: string, space: any) {
+export async function fetchPageNodes(bearer: string, space: any) {
   const postResponse = await fetchAllPages(bearer, space.postDatabaseId);
   const metaResponse = await fetchAllPages(bearer, space.metaDatabaseId);
 
@@ -318,14 +318,14 @@ async function fetchPageNodes(bearer: string, space: any) {
   return [...postTask, ...metaTask];
 }
 
-function checkNewOrUpdated(node: Node, spaceNode: typeof space): Boolean {
+export function checkNewOrUpdated(node: Node, spaceNode: any): Boolean {
   const pageId = node.id;
   let updatedAt : Date | null;
-  const spaceUpdatedAt = spaceNode.updatedAt._.data;
+  const spaceUpdatedAt = spaceNode.updatedAt;
 
-  if('thumbnail' in  node.origin.properties && 'slug' in node.origin.properties && pageId == spaceNode.id._.data){
+  if('thumbnail' in  node.origin.properties && 'slug' in node.origin.properties && pageId == spaceNode.id){
     updatedAt = spaceUpdatedAt;
-  } else if ('images' in node.origin.properties && 'title' in node.origin.properties && pageId == spaceNode.id._.data){
+  } else if ('images' in node.origin.properties && 'title' in node.origin.properties && pageId == spaceNode.id){
     updatedAt = spaceUpdatedAt;
   } else {
     updatedAt = null;
