@@ -1,26 +1,25 @@
-interface Node {
+interface Node<T> {
   origin: {
-    properties: any,
+    properties: T,
     updatedAt: Date
   },
   id: string;
 }
 
-interface PostNode extends Node{
-  properties: {
-    state: String,
-    slug: String,
-    title: String,
-    tags: String,
-    description: String,
-    createdAt: String,
-    thumbnail: String
-  }
+interface PostProperties{
+  state: String,
+  slug: String,
+  title: String,
+  tags: String,
+  description: String,
+  createdAt: String,
+  thumbnail: String
 }
 
-interface MetaNode extends Node{
-  properties: {
-    title: String,
-    images: any
-  }
+interface MetaProperties{
+  title: String,
+  images: any
 }
+
+type PostNode = Node<PostProperties>;
+type MetaNode = Node<MetaProperties>;

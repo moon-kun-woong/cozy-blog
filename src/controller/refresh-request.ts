@@ -112,14 +112,17 @@ export const refreshRequestController = createBase("refresh_request")
 
       const refreshRequests = nodes
         .filter(it =>
-          checkNewOrUpdated(it, space)
+          checkNewOrUpdated(it, fetchedSpace)
         )
         .map(it => ({
           id: crypto.randomUUID(),
           spaceId: fetchedSpace.id,
           sourceType: RefreshRequestSourceType.SPACE,
           pageId: it.id,
-          type: it.RefreshRequestType,
+          type: 
+            ('thumbnail' in it.origin.properties) ? RefreshRequestType.POST
+            : ('images' in it.origin.properties) ? RefreshRequestType.META
+            : RefreshRequestType.NONE,
           state: RefreshRequestState.TODO,
           createdAt: new Date,
           updatedAt: new Date,
@@ -179,7 +182,7 @@ export const refreshRequestController = createBase("refresh_request")
 
         try {
           log.debug(`Start to process refresh request: ${targetRefreshRequest}`);
-          let notionNode: Node;
+          let notionNode: Node<any>;
           try {
             notionNode = await fetchPage(
               accessToken.accessToken,
@@ -312,13 +315,13 @@ export async function fetchPageNodes(bearer: string, space: any) {
   const postResponse = await fetchAllPages(bearer, space.postDatabaseId);
   const metaResponse = await fetchAllPages(bearer, space.metaDatabaseId);
 
-  const postTask = Object(postResponse);
-  const metaTask = Object(metaResponse);
+  const postTask: PostNode[] = Object(postResponse);
+  const metaTask: MetaNode[] = Object(metaResponse);
 
   return [...postTask, ...metaTask];
 }
 
-export function checkNewOrUpdated(node: Node, spaceNode: any): Boolean {
+export function checkNewOrUpdated(node: Node<any>, spaceNode: any): Boolean {
   const pageId = node.id;
   let updatedAt : Date | null;
   const spaceUpdatedAt = spaceNode.updatedAt;

@@ -22,7 +22,7 @@ export async function fetchAllPages(
 export async function fetchPage(
   bearer: string, 
   id: string
-): Promise<Node> {
+): Promise<Node<any>> {
 
   const response =
     await fetch(
@@ -40,7 +40,7 @@ export async function fetchPage(
   
   const data: any = await response.json();
 
-  const node: Node = {
+  const node: Node<any> = {
     origin: {
       properties: data.origin?.properties,
       updatedAt: new Date(data.origin?.updatedAt),
